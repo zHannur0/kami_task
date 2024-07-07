@@ -101,7 +101,7 @@ const EnhancedTableHead: React.FC<EnhancedTableProps> = ({ order, orderBy, onReq
                     align={"right"}
                     padding="normal"
                 >
-                 Actions
+                    Actions
                 </TableCell>
             </TableRow>
         </TableHead>
@@ -138,12 +138,18 @@ const ProductsTable: React.FC = () => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [searchTerm, setSearchTerm] = useState('');
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const products = useTypedSelector((state) => state.products.products || []);
 
     useEffect(() => {
-        dispatch(getProductsThunk());
+        const fetchData = async () => {
+            setLoading(true);
+            await dispatch(getProductsThunk());
+            setLoading(false);
+        };
+        fetchData();
     }, [dispatch]);
 
     const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof Product) => {
@@ -156,7 +162,6 @@ const ProductsTable: React.FC = () => {
     const handleChangePage = (_event: unknown, newPage: number) => {
         setPage(newPage);
     };
-
 
     const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
         setRowsPerPage(parseInt(event.target.value, 10));
@@ -205,31 +210,50 @@ const ProductsTable: React.FC = () => {
                     <Table sx={{ minWidth: 750 }} aria-labelledby="tableTitle">
                         <EnhancedTableHead order={order} orderBy={orderBy} onRequestSort={handleRequestSort} />
                         <TableBody>
-                            {visibleRows.map((row) => (
-                                <TableRow hover tabIndex={-1} key={row._id}>
-                                    <TableCell align="left">
-                                        {
-                                            row.image ? (
-                                                <Avatar alt="image" src={row.image} />
-                                            ) : (
-                                                <Skeleton variant="circular" width={40} height={40} />
-                                            )
-                                        }
-                                    </TableCell>
-                                    <TableCell align="left">
-                                        {row.name}
-                                    </TableCell>
-                                    <TableCell align="left">
-                                        <div dangerouslySetInnerHTML={{ __html: (row.description || "") }} />
-                                    </TableCell>
-                                    <TableCell align="left">{row.price}</TableCell>
-                                    <TableCell align="left">{row.status}</TableCell>
-                                    <TableCell align="right">
-                                        <EditIcon onClick={() => navigate(`/edit/${row._id}`)} cursor={"pointer"} />
-                                        <DeleteIcon onClick={() => handleDelete(row._id || "")} cursor={"pointer"} />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                            {loading ? (
+                                Array.from(new Array(rowsPerPage)).map((_, index) => (
+                                    <TableRow hover tabIndex={-1} key={index}>
+                                        <TableCell align="left">
+                                            <Skeleton variant="circular" width={40} height={40} />
+                                        </TableCell>
+                                        <TableCell align="left">
+                                            <Skeleton variant="text" width={100} />
+                                        </TableCell>
+                                        <TableCell align="left">
+                                            <Skeleton variant="text" width={200} />
+                                        </TableCell>
+                                        <TableCell align="left">
+                                            <Skeleton variant="text" width={50} />
+                                        </TableCell>
+                                        <TableCell align="left">
+                                            <Skeleton variant="text" width={50} />
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <Skeleton variant="text" width={80} />
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                visibleRows.map((row) => (
+                                    <TableRow hover tabIndex={-1} key={row._id}>
+                                        <TableCell align="left">
+                                            <Avatar alt="image" src={row.image} />
+                                        </TableCell>
+                                        <TableCell align="left">
+                                            {row.name}
+                                        </TableCell>
+                                        <TableCell align="left">
+                                            <div dangerouslySetInnerHTML={{ __html: (row.description || "") }} />
+                                        </TableCell>
+                                        <TableCell align="left">{row.price}</TableCell>
+                                        <TableCell align="left">{row.status}</TableCell>
+                                        <TableCell align="right">
+                                            <EditIcon onClick={() => navigate(`/edit/${row._id}`)} cursor={"pointer"} />
+                                            <DeleteIcon onClick={() => handleDelete(row._id || "")} cursor={"pointer"} />
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>
