@@ -14,6 +14,7 @@ import {
     Chip,
     Grid,
     IconButton,
+    CircularProgress,
 } from '@mui/material';
 import axios from 'axios';
 import { Product } from '../types/types.ts';
@@ -55,6 +56,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ isEdit, product }) => {
     const [currImage, setCurrImage] = useState<string>("");
     const [formValues, setFormValues] = useState<ProductFormValues>(initialValues);
     const [imageValidation, setImageValidation] = useState<string>("");
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if(image) {
@@ -81,12 +83,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ isEdit, product }) => {
         }
     };
 
-
     const handleSubmit = async (values: ProductFormValues) => {
         if(!image) {
             setImageValidation("Image is required");
         }else {
             setImageValidation("");
+            setLoading(true);
             try {
                 const formData = new FormData();
                 formData.append('file', image ? image : '');
@@ -113,6 +115,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ isEdit, product }) => {
                 navigate('/');
             } catch (error) {
                 console.error('Error saving product:', error);
+            } finally {
+                setLoading(false);
             }
         }
     };
@@ -223,8 +227,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ isEdit, product }) => {
                                     <ErrorMessage name="status" component="div" />
                                 </FormControl>
                                 <Box display="flex" justifyContent="space-between" mt={2}>
-                                    <Button variant="contained" color="primary" type="submit">
-                                        Save
+                                    <Button variant="contained" color="primary" type="submit" disabled={loading}>
+                                        {loading ? <CircularProgress size={24} /> : 'Save'}
                                     </Button>
                                     <Button variant="outlined" color="secondary" onClick={() => navigate('/')}>
                                         Cancel
