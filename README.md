@@ -26,17 +26,20 @@ This is a technical assignment where I had to write a SPA. To implement it, I us
      cd frontend
      npm install
 
-3. Set up the environment variables, get from env.example, and i will send you mongoDb url. Create .emv file in api directory.
+3. Create .emv file in api directory. Set up the environment variables, get from env.example, and i will send you mongoDb url. 
 
 4. Start the backend server: after configuration
    ```bash
     docker build -t api-image . 
     docker run -p 8080:8080 --env-file .env api-image
 
-5. If you want withou docker, write:
+5. If you want without docker, write:
       ```bash
        npm run server
 
+6. To run frontend:
+      ```bash
+       npm run dev
 
 ## API Endpoints
 
