@@ -12,7 +12,7 @@ import {
     TableSortLabel,
     Toolbar,
     Typography,
-    Button, Avatar
+    Button, Avatar, Skeleton, TextField
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -28,7 +28,7 @@ type Order = 'asc' | 'desc';
 
 interface HeadCell {
     disablePadding: boolean;
-    id: string;
+    id: keyof Product;
     label: string;
     numeric: boolean;
 }
@@ -39,28 +39,27 @@ const headCells: readonly HeadCell[] = [
     { id: 'description', numeric: false, disablePadding: false, label: 'Description' },
     { id: 'price', numeric: true, disablePadding: false, label: 'Price' },
     { id: 'status', numeric: true, disablePadding: false, label: 'Status' },
-    { id: 'actions', numeric: false, disablePadding: false, label: 'Actions' },
 ];
 
 interface EnhancedTableProps {
     order: Order;
-    orderBy: string;
+    orderBy: keyof Product;
     onRequestSort: (event: React.MouseEvent<unknown>, property: keyof Product) => void;
 }
 
-function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
+function descendingComparator<T>(a: T, b: T, orderBy: keyof T): number {
     if (b[orderBy] < a[orderBy]) return -1;
     if (b[orderBy] > a[orderBy]) return 1;
     return 0;
 }
 
-function getComparator<Key extends keyof any>(order: Order, orderBy: Key) {
+function getComparator<Key extends keyof Product>(order: Order, orderBy: Key): (a: Product, b: Product) => number {
     return order === 'desc'
         ? (a, b) => descendingComparator(a, b, orderBy)
         : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
-function stableSort<T>(array: readonly T[], comparator: (a: T, b: T) => number) {
+function stableSort<T>(array: readonly T[], comparator: (a: T, b: T) => number): T[] {
     const stabilizedThis = array.map((el, index) => [el, index] as [T, number]);
     stabilizedThis.sort((a, b) => {
         const order = comparator(a[0], b[0]);
@@ -80,7 +79,7 @@ const EnhancedTableHead: React.FC<EnhancedTableProps> = ({ order, orderBy, onReq
                 {headCells.map((headCell) => (
                     <TableCell
                         key={headCell.id}
-                        align={headCell.label === "Actions" ? 'right' : 'left'}
+                        align={"left"}
                         padding="normal"
                         sortDirection={orderBy === headCell.id ? order : false}
                     >
@@ -98,12 +97,18 @@ const EnhancedTableHead: React.FC<EnhancedTableProps> = ({ order, orderBy, onReq
                         </TableSortLabel>
                     </TableCell>
                 ))}
+                <TableCell
+                    align={"right"}
+                    padding="normal"
+                >
+                 Actions
+                </TableCell>
             </TableRow>
         </TableHead>
     );
 };
 
-const EnhancedTableToolbar: React.FC = () => {
+const EnhancedTableToolbar: React.FC<{ searchTerm: string; onSearchChange: (event: React.ChangeEvent<HTMLInputElement>) => void }> = ({ searchTerm, onSearchChange }) => {
     const navigate = useNavigate();
 
     return (
@@ -111,9 +116,18 @@ const EnhancedTableToolbar: React.FC = () => {
             <Typography variant="h6" id="tableTitle" component="div">
                 Products
             </Typography>
-            <Button variant="contained" color="success" onClick={() => navigate(`/create`)}>
-                New Product
-            </Button>
+            <Box display="flex" alignItems={"center"}>
+                <TextField
+                    variant="outlined"
+                    placeholder="Search by name"
+                    value={searchTerm}
+                    onChange={onSearchChange}
+                    sx={{ mr: 2 }}
+                />
+                <Button variant="contained" color="success" onClick={() => navigate(`/create`)}>
+                    New Product
+                </Button>
+            </Box>
         </Toolbar>
     );
 };
@@ -123,30 +137,42 @@ const ProductsTable: React.FC = () => {
     const [orderBy, setOrderBy] = useState<keyof Product>('price');
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
-    const products = useTypedSelector((state) => state.products.products);
+    const products = useTypedSelector((state) => state.products.products || []);
 
     useEffect(() => {
         dispatch(getProductsThunk());
     }, [dispatch]);
 
     const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof Product) => {
+        event.preventDefault();
         const isAsc = orderBy === property && order === 'asc';
         setOrder(isAsc ? 'desc' : 'asc');
         setOrderBy(property);
     };
 
-    const handleChangePage = (event: unknown, newPage: number) => {
+    const handleChangePage = (_event: unknown, newPage: number) => {
         setPage(newPage);
     };
+
 
     const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
     };
 
-    const visibleRows = stableSort(products, getComparator(order, orderBy)).slice(
+    const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(event.target.value);
+        setPage(0);
+    };
+
+    const filteredProducts = products.filter((product) =>
+        product.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const visibleRows = stableSort(filteredProducts, getComparator(order, orderBy)).slice(
         page * rowsPerPage,
         page * rowsPerPage + rowsPerPage,
     );
@@ -174,7 +200,7 @@ const ProductsTable: React.FC = () => {
     return (
         <Box sx={{ width: '100%' }}>
             <Paper sx={{ width: '100%', mb: 2 }}>
-                <EnhancedTableToolbar />
+                <EnhancedTableToolbar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
                 <TableContainer>
                     <Table sx={{ minWidth: 750 }} aria-labelledby="tableTitle">
                         <EnhancedTableHead order={order} orderBy={orderBy} onRequestSort={handleRequestSort} />
@@ -182,17 +208,25 @@ const ProductsTable: React.FC = () => {
                             {visibleRows.map((row) => (
                                 <TableRow hover tabIndex={-1} key={row._id}>
                                     <TableCell align="left">
-                                        <Avatar alt="image" src={row.image} />
+                                        {
+                                            row.image ? (
+                                                <Avatar alt="image" src={row.image} />
+                                            ) : (
+                                                <Skeleton variant="circular" width={40} height={40} />
+                                            )
+                                        }
                                     </TableCell>
                                     <TableCell align="left">
                                         {row.name}
                                     </TableCell>
-                                    <TableCell align="left">{row.description}</TableCell>
+                                    <TableCell align="left">
+                                        <div dangerouslySetInnerHTML={{ __html: (row.description || "") }} />
+                                    </TableCell>
                                     <TableCell align="left">{row.price}</TableCell>
                                     <TableCell align="left">{row.status}</TableCell>
                                     <TableCell align="right">
-                                        <EditIcon onClick={() => navigate(`/edit/${row._id}`)} cursor={"pointer"}/>
-                                        <DeleteIcon onClick = {() => handleDelete(row._id)} cursor={"pointer"}/>
+                                        <EditIcon onClick={() => navigate(`/edit/${row._id}`)} cursor={"pointer"} />
+                                        <DeleteIcon onClick={() => handleDelete(row._id || "")} cursor={"pointer"} />
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -202,7 +236,7 @@ const ProductsTable: React.FC = () => {
                 <TablePagination
                     rowsPerPageOptions={[5, 10, 25]}
                     component="div"
-                    count={products.length}
+                    count={filteredProducts.length}
                     rowsPerPage={rowsPerPage}
                     page={page}
                     onPageChange={handleChangePage}

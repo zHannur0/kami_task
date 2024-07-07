@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Formik, Form, Field, FormikHelpers, ErrorMessage } from 'formik';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import {
     Box,
@@ -18,6 +18,10 @@ import {
 import axios from 'axios';
 import { Product } from '../types/types.ts';
 import ClearIcon from '@mui/icons-material/Clear';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import Typography from "@mui/material/Typography";
+import '../index.css';
 
 interface ProductFormProps {
     isEdit: boolean;
@@ -50,6 +54,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ isEdit, product }) => {
     const [image, setImage] = useState<File | null>(null);
     const [currImage, setCurrImage] = useState<string>("");
     const [formValues, setFormValues] = useState<ProductFormValues>(initialValues);
+    const [imageValidation, setImageValidation] = useState<string>("");
+
+    useEffect(() => {
+        if(image) {
+            setImageValidation("")
+        }
+    }, [image]);
 
     useEffect(() => {
         if (isEdit && product) {
@@ -70,34 +81,39 @@ const ProductForm: React.FC<ProductFormProps> = ({ isEdit, product }) => {
         }
     };
 
-    const handleSubmit = async (values: ProductFormValues, actions: FormikHelpers<ProductFormValues>) => {
-        try {
-            const formData = new FormData();
-            formData.append('file', image ? image : '');
-            formData.append('name', values.name);
-            formData.append('description', values.description);
-            formData.append('price', String(values.price));
-            formData.append('status', values.status);
 
-            if (!isEdit) {
-                const response = await axios.post('http://localhost:5000/api/products', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-                console.log('Product created successfully:', response.data);
-            } else {
-                const response = await axios.put(`http://localhost:5000/api/products/${product?._id}`, formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-                console.log('Product updated successfully:', response.data);
+    const handleSubmit = async (values: ProductFormValues) => {
+        if(!image) {
+            setImageValidation("Image is required");
+        }else {
+            setImageValidation("");
+            try {
+                const formData = new FormData();
+                formData.append('file', image ? image : '');
+                formData.append('name', values.name);
+                formData.append('description', values.description);
+                formData.append('price', String(values.price));
+                formData.append('status', values.status);
+
+                if (!isEdit) {
+                    const response = await axios.post('http://localhost:8080/api/products', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+                    console.log('Product created successfully:', response.data);
+                } else {
+                    const response = await axios.put(`http://localhost:8080/api/products/${product?._id}`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+                    console.log('Product updated successfully:', response.data);
+                }
+                navigate('/');
+            } catch (error) {
+                console.error('Error saving product:', error);
             }
-            navigate('/');
-        } catch (error) {
-            console.error('Error saving product:', error);
-            actions.setErrors({ submit: error.message });
         }
     };
 
@@ -134,7 +150,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ isEdit, product }) => {
                                     <FormLabel>Product Image</FormLabel>
                                     <input
                                         accept="image/*"
-                                        style={{display: 'none'}}
+                                        style={{ display: 'none' }}
                                         id="raised-button-file"
                                         type="file"
                                         onChange={(event) => {
@@ -160,7 +176,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ isEdit, product }) => {
                                             />
                                         </Box>
                                     )}
-                                    <ErrorMessage name="image" component="div" style={{color: 'red'}}/>
+                                    {imageValidation && <Typography color={"error"}>{imageValidation}</Typography>}
                                 </FormControl>
                             )}
                         </Grid>
@@ -175,17 +191,14 @@ const ProductForm: React.FC<ProductFormProps> = ({ isEdit, product }) => {
                                     helperText={touched.name && errors.name}
                                     fullWidth
                                 />
-                                <Field
-                                    as={TextField}
-                                    name="description"
-                                    label="Description of the product"
-                                    variant="outlined"
-                                    error={touched.description && !!errors.description}
-                                    helperText={touched.description && errors.description}
-                                    fullWidth
-                                    multiline
-                                    rows={4}
-                                />
+                                <FormControl error={touched.description && !!errors.description}>
+                                    <FormLabel>Product description</FormLabel>
+                                    <ReactQuill
+                                        value={values.description}
+                                        onChange={(value) => setFieldValue('description', value)}
+                                    />
+                                    <ErrorMessage name="description" component="div" className="error-message"/>
+                                </FormControl>
                                 <Field
                                     as={TextField}
                                     name="price"
@@ -207,13 +220,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ isEdit, product }) => {
                                         <FormControlLabel value="active" control={<Radio />} label="Active" />
                                         <FormControlLabel value="archived" control={<Radio />} label="Archive" />
                                     </RadioGroup>
-                                    <ErrorMessage name="status" component="div" style={{ color: 'red' }} />
+                                    <ErrorMessage name="status" component="div" />
                                 </FormControl>
-                                {errors.submit && (
-                                    <Box color="red" mt={1}>
-                                        {errors.submit}
-                                    </Box>
-                                )}
                                 <Box display="flex" justifyContent="space-between" mt={2}>
                                     <Button variant="contained" color="primary" type="submit">
                                         Save

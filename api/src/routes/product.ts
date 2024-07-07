@@ -37,7 +37,7 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
         const newProduct: IProduct = new Product({
             name: req.body.name,
             description: req.body.description,
-            image: `http://localhost:5000/api/products/file/${file.originalname}`, // Correct URL
+            image: `http://localhost:8080/api/products/file/${file.originalname}`, // Correct URL
             price: req.body.price,
             status: req.body.status,
         });
@@ -94,7 +94,7 @@ router.put('/:id', upload.single('file'), async (req: Request, res: Response) =>
 
         if (file) {
             const prevFilename = existingProduct.image.split('/').pop();
-            updateData.image = `http://localhost:5000/api/products/file/${file.filename}`;
+            updateData.image = `http://localhost:8080/api/products/file/${file.filename}`;
 
             if (gfs && prevFilename) {
                 const files = await gfs.find({filename: prevFilename}).toArray();
