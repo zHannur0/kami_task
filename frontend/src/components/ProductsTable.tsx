@@ -184,7 +184,7 @@ const ProductsTable: React.FC = () => {
 
     const handleDelete = async (productId: string) => {
         try {
-            const response = await axios.delete(`http://localhost:5000/api/products/${productId}`);
+            const response = await axios.delete(`http://localhost:8080/api/products/${productId}`);
             if (response.status === 204) {
                 console.log('Product deleted successfully');
             }
