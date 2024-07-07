@@ -33,9 +33,10 @@ This is a technical assignment where I had to write a SPA. To implement it, I us
     docker build -t api-image . 
     docker run -p 8080:8080 --env-file .env api-image
 
-If you want withou docker, write:
-   ```bash
-   npm run server
+5. If you want withou docker, write:
+      ```bash
+       npm run server
+
 
 ## API Endpoints
 
