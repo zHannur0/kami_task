@@ -26,7 +26,7 @@ This is a technical assignment where I had to write a SPA. To implement it, I us
      cd frontend
      npm install
 
-3. Set up the environment variables, get from env.example, and i will send you mongoDb url.
+3. Set up the environment variables, get from env.example, and i will send you mongoDb url. Create .emv file in api directory.
 
 4. Start the backend server: after configuration
    ```bash
