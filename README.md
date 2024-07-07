@@ -27,6 +27,7 @@ This is a technical assignment where I had to write a SPA. To implement it, I us
 3. Set up the environment variables, get from env.example, and i will send you mongoDb url.
 
 4. Start the backend server: after configuration
+   ```bash
     docker build -t api-image . 
     docker run -p 8080:8080 --env-file .env api-image
 
